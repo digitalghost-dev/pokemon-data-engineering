@@ -1,0 +1,8 @@
+toml==0.10.2
+polars==1.3.0
+pandas==2.2.0
+pyarrow==17.0.0
+requests==2.32.0
+SQLAlchemy==2.0.0
+psycopg2-binary==2.9.9
+infisical-python==2.3.1
