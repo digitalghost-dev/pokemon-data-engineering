@@ -1,15 +1,15 @@
 import toml
 import requests
-import polars as pl
+import pandas as pd
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 with open("config.toml", "r") as f:
     config = toml.load(f)
 
-CONNECTION_STRING = config["database"]["connection_string"]
+CONNECTION_STRING = config["database"]["dev_db_connection_string"]
 
 
-def call_api(pokemon_id) -> tuple[int, str, str, str, list[str], list[str]]:
+def call_api(pokemon_id) -> tuple[int, str, str, str, list[str], list[str], list[str]]:
     url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_id}"
     r = requests.get(url)
 
@@ -22,30 +22,48 @@ def call_api(pokemon_id) -> tuple[int, str, str, str, list[str], list[str]]:
 
     types = [t["type"]["name"] for t in pokemon_data["types"]]
 
-    ability_1 = None
-    ability_2 = None
-    hidden_ability = None
+    abilities = {
+        "ability_1": None,
+        "ability_2": None,
+        "hidden_ability": None,
+        "ability_1_url": None,
+        "ability_2_url": None,
+        "hidden_ability_url": None
+    }
 
     for ability in pokemon_data["abilities"]:
         ability_name = ability["ability"]["name"]
+        ability_url = ability["ability"]["url"]
         if ability["is_hidden"]:
-            hidden_ability = ability_name
+            abilities["hidden_ability"] = ability_name
+            abilities["hidden_ability_url"] = ability_url
         elif ability["slot"] == 1:
-            ability_1 = ability_name
+            abilities["ability_1"] = ability_name
+            abilities["ability_1_url"] = ability_url
         elif ability["slot"] == 2:
-            ability_2 = ability_name
+            abilities["ability_2"] = ability_name
+            abilities["ability_2_url"] = ability_url
 
-    return pokemon_id, height, weight, name, types, [ability_1, ability_2, hidden_ability]
+    return (
+        pokemon_id,
+        height,
+        weight,
+        name,
+        types,
+        [abilities["ability_1"], abilities["ability_2"], abilities["hidden_ability"]],
+        [abilities["ability_1_url"], abilities["ability_2_url"], abilities["hidden_ability_url"]]
+    )
 
 
-def build_dataframe() -> pl.DataFrame:
+def build_dataframe(start: int = 1, end: int = 1026) -> pd.DataFrame:
     data = []
     # Current number of Pokémon is 1025
-    for i in range(1, 1026):
-        pokemon_id, height, weight, name, types, abilities = call_api(i)
+    for i in range(start, end):
+        pokemon_id, height, weight, name, types, ability_name, ability_url = call_api(i)
 
         types += [None] * (2 - len(types))
-        abilities += [None] * (3 - len(abilities))
+        ability_name += [None] * (3 - len(ability_name))
+        ability_url += [None] * (3 - len(ability_url))
 
         data.append(
             {
@@ -55,27 +73,30 @@ def build_dataframe() -> pl.DataFrame:
                 "name": name,
                 "type_1": types[0],
                 "type_2": types[1],
-                "ability_1": abilities[0],
-                "ability_2": abilities[1],
-                "hidden_ability": abilities[2],
+                "ability_1": ability_name[0],
+                "ability_1_url": ability_url[0],
+                "ability_2": ability_name[1],
+                "ability_2_url": ability_url[1],
+                "hidden_ability": ability_name[2],
+                "hidden_ability_url": ability_url[2],
             }
         )
 
-    df = pl.DataFrame(data)
+    pokemon_df = pd.DataFrame(data)
 
-    with pl.Config(tbl_cols=-1, tbl_rows=-1, fmt_str_lengths=100, tbl_width_chars=1000):
-        # print(df)
-        return df
+    return pokemon_df
 
 
-def upload_dataframe():
+def upload_dataframe(pokemon_df: pd.DataFrame):
     dataframe = build_dataframe()
 
     try:
-        dataframe.write_database(
-            table_name="pokemon-schema.pokemon",
-            connection=CONNECTION_STRING,
-            if_table_exists="replace",
+        pokemon_df.to_sql(
+            name="pokemon",
+            con=CONNECTION_STRING,
+            schema="pokemon-schema",
+            if_exists="replace",
+            index=False
         )
     except OperationalError as e:
         print(e)
@@ -84,4 +105,5 @@ def upload_dataframe():
 
 
 if __name__ == "__main__":
-    upload_dataframe()
+    df = build_dataframe()
+    upload_dataframe(df)
