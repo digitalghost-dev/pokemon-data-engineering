@@ -1,3 +1,4 @@
+#!/bin/bash
 export AIRFLOW_HOME=~/Documents/pokemon-data-engineering/etl/airflow
 echo "AIRFLOW_HOME set to $AIRFLOW_HOME"
 echo "------------"
