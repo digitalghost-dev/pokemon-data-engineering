@@ -19,8 +19,10 @@ echo "Constraint URL set to $CONSTRAINT_URL"
 echo "------------"
 echo " "
 
-pip install "apache-airflow==${AIRFLOW_VERSION}" --constraint "${CONSTRAINT_URL}"
+pip install "apache-airflow[postgres]==${AIRFLOW_VERSION}" --constraint "${CONSTRAINT_URL}"
 echo "------------"
 echo " "
 
 echo "Airflow installed with version $AIRFLOW_VERSION using constraints from $CONSTRAINT_URL"
+
+pip install psycopg2-binary==2.9.9
