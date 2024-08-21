@@ -1,0 +1,25 @@
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B608"] # Never enforce `B608` (hardcoded credentials).
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.ruff]
+lint.ignore = ["E501"] # Never enforce `E501` (line length violations).
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+pythonpath = [
+    ".", "components", "tests"
+]
+testpaths = "tests"
+filterwarnings = [
+    "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('.*'\\):DeprecationWarning",
+    "ignore::DeprecationWarning:google.rpc",
+]
