@@ -8,6 +8,7 @@ __pycache__/
 
 # Secrets
 etl/config.toml
+.streamlit/secrets.toml
 secret*
 
 # Distribution / packaging
