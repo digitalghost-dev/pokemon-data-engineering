@@ -7,6 +7,9 @@ with open("config.toml", "r") as f:
     config = toml.load(f)
 
 CONNECTION_STRING = config["database"]["dev_db_connection_string"]
+pd.set_option("display.max_rows", 500)
+pd.set_option("display.max_columns", 500)
+pd.set_option("display.max_colwidth", None)
 
 
 def call_api(pokemon_id) -> tuple[int, str, str, str, list[str], list[str], list[str]]:
@@ -28,7 +31,7 @@ def call_api(pokemon_id) -> tuple[int, str, str, str, list[str], list[str], list
         "hidden_ability": None,
         "ability_1_url": None,
         "ability_2_url": None,
-        "hidden_ability_url": None
+        "hidden_ability_url": None,
     }
 
     for ability in pokemon_data["abilities"]:
@@ -51,7 +54,7 @@ def call_api(pokemon_id) -> tuple[int, str, str, str, list[str], list[str], list
         name,
         types,
         [abilities["ability_1"], abilities["ability_2"], abilities["hidden_ability"]],
-        [abilities["ability_1_url"], abilities["ability_2_url"], abilities["hidden_ability_url"]]
+        [abilities["ability_1_url"], abilities["ability_2_url"], abilities["hidden_ability_url"]],
     )
 
 
@@ -92,11 +95,7 @@ def upload_dataframe(pokemon_df: pd.DataFrame):
 
     try:
         pokemon_df.to_sql(
-            name="pokemon",
-            con=CONNECTION_STRING,
-            schema="pokemon-schema",
-            if_exists="replace",
-            index=False
+            name="pokemon", con=CONNECTION_STRING, schema="pokemon-schema", if_exists="replace", index=False
         )
     except OperationalError as e:
         print(e)
@@ -104,6 +103,33 @@ def upload_dataframe(pokemon_df: pd.DataFrame):
         print(e)
 
 
+def call_dataframe():
+    main_df = build_dataframe()
+    try:
+        pokemon_names_df = pd.read_sql_query(
+            """            
+            SELECT name
+            FROM "pokemon-schema"."pokemon"
+            ORDER BY "pokemon_id"
+            """,
+            CONNECTION_STRING,
+        )
+        name_list = list(pokemon_names_df["name"])
+        base_url = "https://pokemon-objects.nyc3.digitaloceanspaces.com/"
+        image_url_list = [base_url + name + ".png" for name in name_list]
+
+        images_df = pd.DataFrame({"image_url": image_url_list})
+        concat_df = pd.concat([main_df, images_df], axis=1)
+        concat_df.to_sql(
+            name="pokemon", con=CONNECTION_STRING, schema="pokemon-schema", if_exists="replace", index=False
+        )
+    except pd.errors.EmptyDataError as e:
+        print(e)
+    except OperationalError as e:
+        print(e)
+
+
 if __name__ == "__main__":
     df = build_dataframe()
     upload_dataframe(df)
+    call_dataframe()
