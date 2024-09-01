@@ -1,10 +1,15 @@
 import toml
+import os
 import requests
 import pandas as pd
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
-with open("config.toml", "r") as f:
+current_dir = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(current_dir, "config.toml")
+
+with open(config_path, "r") as f:
     config = toml.load(f)
+
 
 CONNECTION_STRING = config["database"]["dev_db_connection_string"]
 pd.set_option("display.max_rows", 500)
@@ -13,6 +18,15 @@ pd.set_option("display.max_colwidth", None)
 
 
 def call_api(pokemon_id) -> tuple[int, str, str, str, list[str], list[str], list[str]]:
+    """
+    Fetches data for a specific Pokémon from the PokeAPI.
+
+    Args:
+        pokemon_id (int): The ID of the Pokémon to fetch.
+
+    Returns:
+        tuple: A tuple containing the Pokémon's ID, height, weight, name, types, abilities, and ability URLs.
+    """
     url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_id}"
     r = requests.get(url)
 
@@ -59,6 +73,16 @@ def call_api(pokemon_id) -> tuple[int, str, str, str, list[str], list[str], list
 
 
 def build_dataframe(start: int = 1, end: int = 1026) -> pd.DataFrame:
+    """
+    Builds a pandas DataFrame containing Pokémon data for a range of Pokémon IDs.
+
+    Args:
+        start (int, optional): The starting Pokémon ID. Defaults to 1.
+        end (int, optional): The ending Pokémon ID. Defaults to 1026.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing Pokémon data including ID, height, weight, name, types, and abilities.
+    """
     data = []
     # Current number of Pokémon is 1025
     for i in range(start, end):
@@ -91,6 +115,16 @@ def build_dataframe(start: int = 1, end: int = 1026) -> pd.DataFrame:
 
 
 def upload_dataframe(pokemon_df: pd.DataFrame):
+    """
+    Uploads a pandas DataFrame containing Pokémon data to a database.
+
+    Args:
+        pokemon_df (pd.DataFrame): The DataFrame containing Pokémon data to be uploaded.
+
+    Raises:
+        OperationalError: If there is an operational error during the upload process.
+        ProgrammingError: If there is a programming error during the upload process.
+    """
     dataframe = build_dataframe()
 
     try:
@@ -104,6 +138,13 @@ def upload_dataframe(pokemon_df: pd.DataFrame):
 
 
 def call_dataframe():
+    """
+    Retrieves Pokémon data from the database, adds image URLs, and uploads the updated DataFrame back to the database.
+
+    Raises:
+        pd.errors.EmptyDataError: If there is an empty data error during the data retrieval process.
+        OperationalError: If there is an operational error during the data retrieval process.
+    """
     main_df = build_dataframe()
     try:
         pokemon_names_df = pd.read_sql_query(
