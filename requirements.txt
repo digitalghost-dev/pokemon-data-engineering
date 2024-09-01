@@ -1,6 +1,6 @@
 toml==0.10.2
 requests==2.32.0
-infisical-python==2.3.1
+# infisical-python==2.3.1
 
 # data
 streamlit==1.37.1
@@ -11,5 +11,5 @@ SQLAlchemy==2.0.0
 psycopg2-binary==2.9.9
 
 # CI/CD
-ruff==0.5.6
-mypy==1.11.1
+# ruff==0.5.6
+# mypy==1.11.1
