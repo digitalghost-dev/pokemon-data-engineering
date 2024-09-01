@@ -1,10 +1,10 @@
 #!/bin/bash
-export AIRFLOW_HOME=~/Documents/pokemon-data-engineering/etl/airflow
+export AIRFLOW_HOME=/Users/$USER/PycharmProjects/pokemon-data-engineering/etl/airflow
 echo "AIRFLOW_HOME set to $AIRFLOW_HOME"
 echo "------------"
 echo " "
 
-AIRFLOW_VERSION=2.7.3
+AIRFLOW_VERSION=2.9.2
 echo "Airflow version set to $AIRFLOW_VERSION"
 echo "------------"
 echo " "
